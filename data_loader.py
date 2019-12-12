@@ -41,8 +41,8 @@ def get_dataloader(
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation((-20, 20)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[1.0, 1.0, 1.0],
-                             std= [0.3, 0.3, 0.3])])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])])
 
     face_datasets = {
         phase: FaceDataset(

@@ -7,7 +7,8 @@ class BaseModel(nn.Module):
     
     def __init__(self, num_classes):
         super(BaseModel, self).__init__()
-        model = models.resnet34(pretrained=False)
+        model = models.resnet101(pretrained=False)
+        #model = models.resnet34(pretrained=False)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_classes)
         self.model = model
