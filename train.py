@@ -103,7 +103,7 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_dir', type=str,
-                        default='/home/mtb/ongoing_analysis/pku-autonomous-driving/attic/programmers/dataset',
+                        default='/home/mtb/ongoing_analysis/pku-autonomous-driving/attic/programmers_face_recognition/dataset',
                         help='input directory for images.')
 
     parser.add_argument('--model_name', type=str, default='transformer',
