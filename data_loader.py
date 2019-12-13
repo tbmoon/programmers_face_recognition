@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 import torch
 import torch.utils.data as data
@@ -9,6 +10,7 @@ from torchvision import transforms
 class FaceDataset(data.Dataset):
     def __init__(self, input_dir, phase, transform=None):
         self.input_dir = input_dir
+        self.phase = phase
         self.df = pd.read_csv(os.path.join(input_dir, phase + '.csv'))
         self.load_label = True if phase is not 'test' else False
         self.transform = transform
@@ -19,7 +21,12 @@ class FaceDataset(data.Dataset):
 
         if self.transform:
             image = self.transform(image)
-
+        
+        if self.phase == 'train':
+            a, b = np.random.normal(1, 0.1, (3, 1, 1)), np.random.normal(0, 0.1, (3, 1, 1))
+            a, b = torch.tensor(a, dtype=torch.float32), torch.tensor(b, dtype=torch.float32)
+            image = image * a + b
+        
         if self.load_label:
             label = self.df['label'][idx] - 1
 

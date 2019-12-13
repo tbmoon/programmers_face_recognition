@@ -8,16 +8,17 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.optim import lr_scheduler
 from data_loader import FaceDataset, get_dataloader
-from models import BaseModel
+from models import BaseModel, DenseCrossEntropy, ArcFaceLoss
 
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
 def main(args):
-    
+
     os.makedirs(os.path.join(os.getcwd(), 'logs'), exist_ok=True)
     os.makedirs(os.path.join(os.getcwd(), 'models'), exist_ok=True)
+    os.makedirs(os.path.join(os.getcwd(), 'png'), exist_ok=True)
 
     data_loaders, data_sizes = get_dataloader(
         input_dir=args.input_dir,
@@ -25,10 +26,12 @@ def main(args):
         batch_size=args.batch_size,
         num_workers=args.num_workers)
     
-    model = BaseModel(args.num_classes)
+    model = BaseModel(args)
     model = model.to(device)
 
-    criterion = nn.CrossEntropyLoss(reduction='sum')
+    criterion = DenseCrossEntropy()
+    criterion_arc = ArcFaceLoss()
+    #criterion = nn.CrossEntropyLoss(reduction='sum')
 
     if args.load_model:
         checkpoint = torch.load(os.path.join(os.getcwd(), 'models/model.ckpt'))
@@ -43,6 +46,7 @@ def main(args):
         for phase in ['train', 'valid']:
             since = time.time()
             running_loss = 0.0
+            running_loss_arc = 0.0
             running_corrects = 0.0
             running_size = 0.0
 
@@ -61,24 +65,32 @@ def main(args):
                 sample_size = image.size(0)
                 
                 with torch.set_grad_enabled(phase == 'train'):
-                    output = model(image)           # [batch_size, num_classes]
-                    _, pred = torch.max(output, 1)  # [batch_size]
+                    total_loss = 0.0
+                    output_arc, output = model(image)           # [batch_size, num_classes]
+
+                    _, pred = torch.max(output, 1)
                     loss = criterion(output, label)
+                    loss_arc = criterion(output_arc, label)
+                    coeff = args.metric_loss_coeff
+                    total_loss = (1 - coeff) * loss + coeff * loss_arc
 
                     if phase == 'train':
-                        loss.backward()
+                        total_loss.backward()
                         _ = nn.utils.clip_grad_norm_(model.parameters(), args.clip)
                         optimizer.step()
             
                 running_loss += loss.item()
+                running_loss_arc += loss_arc.item()
                 running_corrects += torch.sum(pred == label)
                 running_size += sample_size
 
             epoch_loss = running_loss / running_size
+            epoch_loss_arc = running_loss_arc / running_size
             epoch_accuracy = float(running_corrects) / running_size
 
             print('| {} SET | Epoch [{:02d}/{:02d}]'.format(phase.upper(), epoch+1, args.num_epochs))
-            print('\t*- Total Loss        : {:.4f}'.format(epoch_loss))
+            print('\t*- Loss              : {:.4f}'.format(epoch_loss))
+            print('\t*- Loss_Arc          : {:.4f}'.format(epoch_loss_arc))
             print('\t*- Accuracy          : {:.4f}'.format(epoch_accuracy))
 
             # Log the loss in an epoch.
@@ -112,22 +124,28 @@ if __name__ == '__main__':
     parser.add_argument('--load_model', type=bool, default=False,
                         help='load_model.')
 
-    parser.add_argument('--n_layers', type=int, default=2,
-                        help='n_layers for the encoder. (6)')
+    parser.add_argument('--bn-mom', type=float, default=0.05,
+                        help='bn-momentum (0.05)')
+    
+    parser.add_argument('--embed_size', type=int, default=512,
+                        help='size of embedding. (512)')
 
     parser.add_argument('--num_classes', type=int, default=6,
                         help='the number of classes. (6)')
 
     parser.add_argument('--dropout', type=float, default=0.1,
                         help='dropout. (0.1)')
-
+    
+    parser.add_argument('--metric-loss-coeff', type=float, default=0.2,
+                        help='')
+    
     parser.add_argument('--learning_rate', type=float, default=0.001,
                         help='learning rate for training. (0.001)')
 
     parser.add_argument('--clip', type=float, default=0.25,
                         help='gradient clipping. (0.25)')
 
-    parser.add_argument('--step_size', type=int, default=40,
+    parser.add_argument('--step_size', type=int, default=100,
                         help='period of learning rate decay. (5)')
 
     parser.add_argument('--gamma', type=float, default=0.5,
