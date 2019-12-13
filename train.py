@@ -26,7 +26,7 @@ def main(args):
         batch_size=args.batch_size,
         num_workers=args.num_workers)
     
-    model = BaseModel(args)
+    model = BaseModel(args.bn_mom, args.embed_size, args.num_classes)
     model = model.to(device)
 
     criterion = DenseCrossEntropy()
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--bn-mom', type=float, default=0.05,
                         help='bn-momentum (0.05)')
     
-    parser.add_argument('--embed_size', type=int, default=512,
+    parser.add_argument('--embed_size', type=int, default=128,
                         help='size of embedding. (512)')
 
     parser.add_argument('--num_classes', type=int, default=6,
@@ -145,13 +145,13 @@ if __name__ == '__main__':
     parser.add_argument('--clip', type=float, default=0.25,
                         help='gradient clipping. (0.25)')
 
-    parser.add_argument('--step_size', type=int, default=100,
+    parser.add_argument('--step_size', type=int, default=50,
                         help='period of learning rate decay. (5)')
 
     parser.add_argument('--gamma', type=float, default=0.5,
                         help='multiplicative factor of learning rate decay. (0.1)')
 
-    parser.add_argument('--num_epochs', type=int, default=200,
+    parser.add_argument('--num_epochs', type=int, default=1000,
                         help='the number of epochs. (100)')
 
     parser.add_argument('--batch_size', type=int, default=128,
