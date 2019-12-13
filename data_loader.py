@@ -40,9 +40,9 @@ def get_dataloader(
         transforms.RandomResizedCrop(128),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation((-20, 20)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])])
+        transforms.ToTensor()])
+        #transforms.Normalize(mean=[0.485, 0.456, 0.406],
+        #                     std=[0.229, 0.224, 0.225])])
 
     face_datasets = {
         phase: FaceDataset(
@@ -55,7 +55,7 @@ def get_dataloader(
         phase: torch.utils.data.DataLoader(
             dataset=face_datasets[phase],
             batch_size=batch_size,
-            shuffle=False if phase is not 'test' else False,
+            shuffle=True if phase is not 'test' else False,
             num_workers=num_workers,
             pin_memory=False)
         for phase in phases}
