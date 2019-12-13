@@ -35,20 +35,24 @@ def get_dataloader(
     batch_size,
     num_workers):
 
-    data_transforms = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.RandomResizedCrop(128),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation((-20, 20)),
-        transforms.ToTensor()])
-        #transforms.Normalize(mean=[0.485, 0.456, 0.406],
-        #                     std=[0.229, 0.224, 0.225])])
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomResizedCrop(128),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation((-10, 10)),
+            transforms.ToTensor()]),
+        'valid': transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomResizedCrop(128),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor()])}
 
     face_datasets = {
         phase: FaceDataset(
             input_dir,
             phase,
-            data_transforms)
+            data_transforms[phase])
         for phase in phases}
 
     data_loaders = {
