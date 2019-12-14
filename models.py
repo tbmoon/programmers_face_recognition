@@ -8,10 +8,17 @@ import torchvision.models as models
 class BaseModel(nn.Module):
     def __init__(self, bn_mom, embed_size, num_classes):
         super(BaseModel, self).__init__()
-        backbone = models.vgg11_bn(pretrained=False)
-        num_features = backbone.classifier[0].in_features
+        backbone = models.resnet152(pretrained=False)
+        num_features = backbone.fc.in_features
         self.features = nn.Sequential(
-            backbone.features
+            backbone.conv1,
+            backbone.bn1,
+            backbone.relu,
+            backbone.maxpool,
+            backbone.layer1,
+            backbone.layer2,
+            backbone.layer3,
+            backbone.layer4
         )
         self.neck = nn.Sequential(
             nn.BatchNorm1d(num_features),
@@ -29,7 +36,7 @@ class BaseModel(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = F.adaptive_avg_pool2d(x, (7, 7))
+        x = F.adaptive_avg_pool2d(x, (1, 1))
         x = x.view(x.size(0), -1)
         embedding = self.neck(x)
         return self.arc_margin_product(embedding), self.head(embedding)
